@@ -99,6 +99,26 @@ class GithubClient(object):
             return []
 
         return [user["login"] for user in response.json()]
+    
+    def list_open_issues(self, full_name: str) -> List[dict]:
+        url = f"https://api.github.com/repos/{full_name}/issues"
+        params = {"state": "open", "filter": "all"}
+
+        response = requests.get(url, headers=self.request_headers, params=params)
+        if response.status_code != 200:
+            logger.error(f"Failed to get open issues for {full_name}: {response.text}")
+            return []
+
+        issues = response.json()
+        return [
+            {
+                "title": issue["title"],
+                "number": issue["number"],
+                "url": issue["html_url"]
+            }
+            for issue in issues if "pull_request" not in issue  # Excludes pull requests
+        ]
+
 
     @staticmethod
     def __repo_from_json(repo):

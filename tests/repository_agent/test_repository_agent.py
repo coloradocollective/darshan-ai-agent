@@ -156,3 +156,45 @@ class TestRepositoryAgent(unittest.TestCase):
             )],
             result.tool_calls
         )
+
+    @slow
+    @responses.activate
+    def test_list_open_issues(self):
+        responses.add(
+            responses.GET,
+            "https://api.github.com/repos/pickles_org/pickles_repo/issues",
+            json=[
+                {
+                    "title": "Fix login bug",
+                    "number": 101,
+                    "html_url": "https://github.com/pickles_org/pickles_repo/issues/101"
+                },
+                {
+                    "title": "Improve footer responsiveness",
+                    "number": 102,
+                    "html_url": "https://github.com/pickles_org/pickles_repo/issues/102"
+                },
+                {
+                    "title": "This is a abnormal request",
+                    "number": 103,
+                    "html_url": "https://github.com/pickles_org/pickles_repo/pull/103",
+                    "pull_request": {}
+                }
+            ],
+            status=200
+        )
+
+        result = self.agent.answer("What open issues are there in pickles_repo by pickles_org?")
+
+        self.assertIn("Fix login bug", result.response)
+        self.assertIn("Improve footer responsiveness", result.response)
+        self.assertNotIn("This is a abnormal request", result.response)
+
+        self.assertEqual(
+            [ToolCall(
+                name='list_open_issues',
+                arguments={'full_name': 'pickles_org/pickles_repo'}
+            )],
+            result.tool_calls
+        )
+
